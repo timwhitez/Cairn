@@ -87,3 +87,11 @@ def test_configure_adds_and_backfills_project_started_at(tmp_path, monkeypatch) 
     with db.get_conn() as conn:
         row = conn.execute("SELECT started_at FROM projects WHERE id = 'proj_001'").fetchone()
     assert row["started_at"] == "2026-01-01T01:00:00Z"
+
+    with db.get_conn() as conn:
+        conn.execute("UPDATE projects SET started_at = NULL WHERE id = 'proj_001'")
+    monkeypatch.setattr(db, "_db_path", None)
+    db.configure(path)
+    with db.get_conn() as conn:
+        row = conn.execute("SELECT started_at FROM projects WHERE id = 'proj_001'").fetchone()
+    assert row["started_at"] is None

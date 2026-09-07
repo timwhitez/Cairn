@@ -104,16 +104,16 @@ def _ensure_project_columns(conn: sqlite3.Connection) -> None:
             )
     if "started_at" not in columns:
         conn.execute("ALTER TABLE projects ADD COLUMN started_at TEXT")
-    conn.execute(
-        """
-        UPDATE projects
-        SET started_at = COALESCE(
-            (SELECT MIN(intents.created_at) FROM intents WHERE intents.project_id = projects.id),
-            reason_started_at
+        conn.execute(
+            """
+            UPDATE projects
+            SET started_at = COALESCE(
+                (SELECT MIN(intents.created_at) FROM intents WHERE intents.project_id = projects.id),
+                reason_started_at
+            )
+            WHERE started_at IS NULL
+            """
         )
-        WHERE started_at IS NULL
-        """
-    )
 
 
 @contextmanager
