@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS projects (
     status TEXT NOT NULL DEFAULT 'active',
     bootstrap_enabled INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
+    started_at TEXT,
     reason_worker TEXT,
     reason_trigger TEXT,
     reason_started_at TEXT,
@@ -101,6 +102,18 @@ def _ensure_project_columns(conn: sqlite3.Connection) -> None:
             conn.execute(
                 "UPDATE projects SET bootstrap_enabled = CASE WHEN bootstrap_mode = 'disabled' THEN 0 ELSE 1 END"
             )
+    if "started_at" not in columns:
+        conn.execute("ALTER TABLE projects ADD COLUMN started_at TEXT")
+    conn.execute(
+        """
+        UPDATE projects
+        SET started_at = COALESCE(
+            (SELECT MIN(intents.created_at) FROM intents WHERE intents.project_id = projects.id),
+            reason_started_at
+        )
+        WHERE started_at IS NULL
+        """
+    )
 
 
 @contextmanager

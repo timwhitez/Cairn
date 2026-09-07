@@ -52,6 +52,7 @@ def make_project(*, intents: list[Intent] | None = None) -> ProjectDetail:
             status="active",
             bootstrap_enabled=True,
             created_at="2026-01-01T00:00:00Z",
+            started_at=None,
         ),
         facts=[
             Fact(id="origin", description="start"),

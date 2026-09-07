@@ -41,6 +41,26 @@ def test_local_process_captures_stdout_and_exit_code() -> None:
     assert not result.timed_out
 
 
+def test_local_process_bounds_large_output_and_keeps_final_pi_event() -> None:
+    final = '{"type":"turn_end","message":{"role":"assistant","content":[]}}'
+    process = LocalProcess(
+        [
+            "python3", "-c",
+            f"import sys; sys.stdout.write('x' * 12000000 + '\\n' + {final!r} + '\\n')",
+        ],
+        cwd=os.getcwd(),
+        env=dict(os.environ),
+        timeout_seconds=30,
+    )
+
+    process.start()
+    result = process.communicate(timeout=40)
+
+    assert len(result.stdout) < 9 * 1024 * 1024
+    assert "bounded process output omitted" in result.stdout
+    assert "turn_end" in result.stdout
+
+
 def test_local_process_inherits_cwd(tmp_path: Path) -> None:
     process = LocalProcess(
         ["python3", "-c", "import os; print(os.getcwd())"],

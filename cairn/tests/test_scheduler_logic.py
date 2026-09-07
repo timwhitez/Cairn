@@ -33,6 +33,7 @@ def _summary(project_id: str, status: str) -> ProjectSummary:
         status=status,
         bootstrap_enabled=True,
         created_at="2026-01-01T00:00:00Z",
+        started_at=None,
         fact_count=2,
         intent_count=0,
         working_intent_count=0,
@@ -264,16 +265,11 @@ def test_project_timeout_uses_first_persisted_intent_and_stops_project(monkeypat
     loop.config = config.model_copy(
         update={"runtime": config.runtime.model_copy(update={"project_timeout": 3600})}
     )
-    project = make_project(intents=[make_intent()])
-    project.intents[0].created_at = "2026-01-01T08:00:00Z"
-    project.intents.append(make_intent("i002"))
-    project.intents[1].created_at = "2026-01-01T09:59:00Z"
     updates: list[tuple[str, str]] = []
     loop.client = type(
         "Client",
         (),
         {
-            "get_project": lambda _self, _project_id: project,
             "update_project_status": lambda _self, project_id, status: (
                 updates.append((project_id, status)) or type("Result", (), {"ok": True})()
             ),
@@ -287,7 +283,7 @@ def test_project_timeout_uses_first_persisted_intent_and_stops_project(monkeypat
 
     monkeypatch.setattr("cairn.dispatcher.scheduler.loop.datetime", FrozenDateTime)
     summary = _summary("proj_001", "active")
-    summary.intent_count = 2
+    summary.started_at = "2026-01-01T08:00:00Z"
 
     loop._expire_project_timeouts([summary])
 

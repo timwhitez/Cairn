@@ -38,6 +38,11 @@ def create_intent(project_id: str, body: CreateIntentRequest):
         validate_intent_creator_worker(body.creator, body.worker)
 
         now = utcnow()
+        if body.worker is not None:
+            conn.execute(
+                "UPDATE projects SET started_at = COALESCE(started_at, ?) WHERE id = ?",
+                (now, project_id),
+            )
         iid = next_intent_id(conn, project_id)
         claimed = body.worker is not None
         conn.execute(
@@ -81,6 +86,10 @@ def heartbeat(project_id: str, intent_id: str, body: HeartbeatRequest):
         get_claimable_open_intent_or_404(conn, project_id, intent_id, body.worker)
 
         now = utcnow()
+        conn.execute(
+            "UPDATE projects SET started_at = COALESCE(started_at, ?) WHERE id = ?",
+            (now, project_id),
+        )
         conn.execute(
             "UPDATE intents SET worker = ?, last_heartbeat_at = ? WHERE id = ? AND project_id = ?",
             (body.worker, now, intent_id, project_id),

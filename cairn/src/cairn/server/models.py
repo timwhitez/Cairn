@@ -49,6 +49,7 @@ class ProjectMeta(BaseModel):
     status: Literal["active", "stopped", "completed"]
     bootstrap_enabled: bool
     created_at: str
+    started_at: str | None = None
     reason: ProjectReason | None = None
 
 

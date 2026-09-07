@@ -7,7 +7,15 @@ import subprocess
 import threading
 from contextlib import suppress
 
-from cairn.dispatcher.runtime.process import ProcessResult
+from cairn.dispatcher.runtime.process import (
+    BoundedTextBuffer,
+    ImportantJsonLineBuffer,
+    ProcessResult,
+    STDERR_HEAD_LIMIT,
+    STDERR_TAIL_LIMIT,
+    STDOUT_HEAD_LIMIT,
+    STDOUT_TAIL_LIMIT,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -39,8 +47,9 @@ class LocalProcess:
         self._timeout_seconds = timeout_seconds
         self._term_grace = max(1.0, float(term_grace_seconds))
         self._process: subprocess.Popen[str] | None = None
-        self._stdout_chunks: list[str] = []
-        self._stderr_chunks: list[str] = []
+        self._stdout = BoundedTextBuffer(STDOUT_HEAD_LIMIT, STDOUT_TAIL_LIMIT)
+        self._stderr = BoundedTextBuffer(STDERR_HEAD_LIMIT, STDERR_TAIL_LIMIT)
+        self._important_stdout = ImportantJsonLineBuffer()
         self._stdout_thread: threading.Thread | None = None
         self._stderr_thread: threading.Thread | None = None
         self._timed_out = False
@@ -60,10 +69,10 @@ class LocalProcess:
             start_new_session=True,
         )
         self._stdout_thread = threading.Thread(
-            target=self._drain, args=(self._process.stdout, self._stdout_chunks), daemon=True
+            target=self._drain, args=(self._process.stdout, self._stdout, self._important_stdout), daemon=True
         )
         self._stderr_thread = threading.Thread(
-            target=self._drain, args=(self._process.stderr, self._stderr_chunks), daemon=True
+            target=self._drain, args=(self._process.stderr, self._stderr, None), daemon=True
         )
         self._stdout_thread.start()
         self._stderr_thread.start()
@@ -85,10 +94,14 @@ class LocalProcess:
         returncode = self._process.returncode
         if returncode is None:
             returncode = 137 if self._timed_out else 1
+        stdout = self._stdout.value()
+        important = self._important_stdout.value()
+        if important:
+            stdout += "\n" + important + "\n"
         return ProcessResult(
             returncode=returncode,
-            stdout="".join(self._stdout_chunks),
-            stderr="".join(self._stderr_chunks),
+            stdout=stdout,
+            stderr=self._stderr.value(),
             timed_out=self._timed_out,
             cancelled=self._cancel_reason is not None,
             cancel_reason=self._cancel_reason,
@@ -124,10 +137,12 @@ class LocalProcess:
                 process.send_signal(sig)
 
     @staticmethod
-    def _drain(pipe, sink: list[str]) -> None:
+    def _drain(pipe, sink: BoundedTextBuffer, important: ImportantJsonLineBuffer | None) -> None:
         try:
             for chunk in iter(lambda: pipe.read(READ_CHUNK_SIZE), ""):
                 sink.append(chunk)
+                if important is not None:
+                    important.append(chunk)
         except (ValueError, OSError):
             pass
         finally:

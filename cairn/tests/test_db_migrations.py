@@ -68,3 +68,22 @@ def test_configure_maps_disabled_bootstrap_mode_to_false(tmp_path, monkeypatch) 
         ("proj_001", 0),
         ("proj_002", 1),
     ]
+
+
+def test_configure_adds_and_backfills_project_started_at(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "legacy-started-at.db"
+    with sqlite3.connect(path) as conn:
+        conn.executescript(db.SCHEMA.replace("    started_at TEXT,\n", ""))
+        conn.execute(
+            "INSERT INTO projects (id, title, created_at) VALUES ('proj_001', 'legacy', '2026-01-01T00:00:00Z')"
+        )
+        conn.execute(
+            "INSERT INTO intents (id, project_id, description, creator, created_at) "
+            "VALUES ('i001', 'proj_001', 'work', 'worker', '2026-01-01T01:00:00Z')"
+        )
+    monkeypatch.setattr(db, "_db_path", None)
+    db.configure(path)
+
+    with db.get_conn() as conn:
+        row = conn.execute("SELECT started_at FROM projects WHERE id = 'proj_001'").fetchone()
+    assert row["started_at"] == "2026-01-01T01:00:00Z"

@@ -179,11 +179,8 @@ class RuntimeConfig(BaseModel):
     def validate_heartbeat_grace(self) -> "RuntimeConfig":
         if self.heartbeat_failure_grace is not None and self.heartbeat_failure_grace <= self.interval:
             raise ValueError("heartbeat_failure_grace must be greater than interval")
-        if (
-            self.server_lease_timeout is not None
-            and self.heartbeat_failure_grace is not None
-            and self.server_lease_timeout <= self.heartbeat_failure_grace
-        ):
+        effective_grace = self.heartbeat_failure_grace or self.interval * 2
+        if self.server_lease_timeout is not None and self.server_lease_timeout <= effective_grace:
             raise ValueError("server_lease_timeout must be greater than heartbeat_failure_grace")
         return self
 

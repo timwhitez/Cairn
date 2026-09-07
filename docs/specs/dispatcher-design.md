@@ -875,6 +875,9 @@ codex exec resume "{session}" --dangerously-bypass-approvals-and-sandbox --model
 | `runtime.max_project_workers` | 是 | 单个项目内同时运行的任务上限，统一计入 `bootstrap`、`reason` 和 `explore` |
 | `runtime.interval` | 是 | 统一节拍配置；既是 Dispatcher 主循环间隔，也是带 claim 任务的 heartbeat 周期 |
 | `runtime.healthcheck_timeout` | 是 | Worker 健康检查的统一外层 watchdog 超时 |
+| `runtime.heartbeat_failure_grace` | 否 | 连续 heartbeat 失败后终止 Worker 的宽限时间；省略时为 `2 * interval` |
+| `runtime.server_lease_timeout` | 否 | Dispatcher 启动时写入 Server 的 Intent/Reason lease 超时，必须大于 heartbeat grace |
+| `runtime.project_timeout` | 否 | 从项目首次执行 claim 开始计算的总墙钟秒数；跨任务和 Dispatcher 重启保持 |
 | `runtime.worker_healthcheck` | 否 | Worker 健康检查模式：`startup_and_task`、`startup_only` 或 `disabled`；默认 `startup_only` |
 | `runtime.execution` | 否 | 执行后端：`container`（默认）或 `local`；`local` 时 worker 在 dispatcher 宿主机上以子进程运行，复用本机 CLI，启动时校验各 CLI 是否已安装可用 |
 | `runtime.prompt_group` | 是 | 当前使用的 prompt 组目录名 |

@@ -68,6 +68,7 @@ def test_project_workflow_create_conclude_complete_and_reopen(client: TestClient
     assert response.status_code == 200
     payload = response.json()
     assert payload["project"]["status"] == "active"
+    assert payload["project"]["started_at"] is None
     assert payload["fact"] == {"id": "f002", "description": "human correction"}
     assert payload["intent"]["from"] == ["f001"]
     assert payload["intent"]["to"] == "f002"
@@ -87,6 +88,7 @@ def test_stopping_project_releases_claims_and_reason_but_keeps_hints_writable(cl
     response = client.put(f"/projects/{project_id}/status", json={"status": "stopped"})
     assert response.status_code == 200
     assert response.json()["reason"] is None
+    assert response.json()["started_at"] is not None
 
     detail = client.get(f"/projects/{project_id}").json()
     assert detail["intents"][0]["worker"] is None
@@ -98,6 +100,10 @@ def test_stopping_project_releases_claims_and_reason_but_keeps_hints_writable(cl
         f"/projects/{project_id}/intents",
         json={"from": ["origin"], "description": "blocked", "creator": "reasoner", "worker": None},
     ).status_code == 403
+
+    response = client.put(f"/projects/{project_id}/status", json={"status": "active"})
+    assert response.status_code == 200
+    assert response.json()["started_at"] is None
 
 
 def test_intent_creation_rejects_goal_source_and_mismatched_initial_worker(client: TestClient) -> None:

@@ -850,11 +850,12 @@ class DispatcherLoop:
             return
         now = datetime.now(timezone.utc)
         for summary in summaries:
-            if summary.status != "active" or summary.intent_count == 0:
+            if summary.status != "active" or summary.started_at is None:
                 continue
-            project = self.client.get_project(summary.id)
-            started_at = self._project_started_at(project)
-            if started_at is None or (now - started_at).total_seconds() < timeout:
+            started_at = datetime.fromisoformat(summary.started_at.replace("Z", "+00:00")).astimezone(
+                timezone.utc
+            )
+            if (now - started_at).total_seconds() < timeout:
                 continue
             response = self.client.update_project_status(summary.id, "stopped")
             if not response.ok:
@@ -868,16 +869,6 @@ class DispatcherLoop:
                 "project wall timeout reached project=%s started_at=%s timeout=%ss",
                 summary.id, started_at.isoformat(), timeout,
             )
-
-    @staticmethod
-    def _project_started_at(project: ProjectDetail) -> datetime | None:
-        timestamps = [intent.created_at for intent in project.intents if intent.created_at]
-        if not timestamps:
-            return None
-        return min(
-            datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
-            for value in timestamps
-        )
 
     def _cancel_inactive_tasks(self, summaries: list[ProjectSummary]) -> None:
         status_by_project = {summary.id: summary.status for summary in summaries}

@@ -63,6 +63,7 @@ def list_projects():
                 status=row["status"],
                 bootstrap_enabled=bool(row["bootstrap_enabled"]),
                 created_at=row["created_at"],
+                started_at=row["started_at"],
                 reason=project_reason_from_row(row),
                 fact_count=row["fact_count"],
                 intent_count=row["intent_count"],
@@ -110,6 +111,7 @@ def create_project(body: CreateProjectRequest):
                 status="active",
                 bootstrap_enabled=body.bootstrap_enabled,
                 created_at=now,
+                started_at=None,
                 reason=None,
             ),
             facts=[
@@ -175,8 +177,13 @@ def update_project_status(project_id: str, body: UpdateProjectStatusRequest):
             return project_meta_from_row(row)
 
         conn.execute(
-            "UPDATE projects SET status = ? WHERE id = ?",
-            (body.status, project_id),
+            """
+            UPDATE projects
+            SET status = ?,
+                started_at = CASE WHEN ? = 'active' THEN NULL ELSE started_at END
+            WHERE id = ?
+            """,
+            (body.status, body.status, project_id),
         )
         if body.status == "stopped":
             conn.execute(
@@ -207,10 +214,11 @@ def claim_project_reason(project_id: str, body: ReasonClaimRequest):
             SET reason_worker = ?,
                 reason_trigger = ?,
                 reason_started_at = ?,
-                reason_last_heartbeat_at = ?
+                reason_last_heartbeat_at = ?,
+                started_at = COALESCE(started_at, ?)
             WHERE id = ?
             """,
-            (body.worker, body.trigger, now, now, project_id),
+            (body.worker, body.trigger, now, now, now, project_id),
         )
         updated = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
         return project_meta_from_row(updated)
@@ -340,7 +348,7 @@ def reopen_project(project_id: str, body: ReopenRequest):
             )
         clear_project_reason(conn, project_id)
         conn.execute(
-            "UPDATE projects SET status = 'active' WHERE id = ?",
+            "UPDATE projects SET status = 'active', started_at = NULL WHERE id = ?",
             (project_id,),
         )
 
