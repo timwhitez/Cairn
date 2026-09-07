@@ -46,6 +46,18 @@ def test_runtime_heartbeat_grace_is_bounded() -> None:
     with pytest.raises(ValidationError, match="heartbeat_failure_grace must be greater than interval"):
         DispatchConfig.model_validate(payload)
 
+    payload = make_config().model_dump()
+    payload["runtime"].update(
+        {"project_timeout": 14_400, "heartbeat_failure_grace": 90, "server_lease_timeout": 120}
+    )
+    runtime = DispatchConfig.model_validate(payload).runtime
+    assert runtime.project_timeout == 14_400
+    assert runtime.server_lease_timeout == 120
+
+    payload["runtime"]["server_lease_timeout"] = 90
+    with pytest.raises(ValidationError, match="server_lease_timeout must be greater"):
+        DispatchConfig.model_validate(payload)
+
 
 def test_dispatch_config_rejects_duplicate_workers_and_excess_project_parallelism() -> None:
     payload = make_config().model_dump()

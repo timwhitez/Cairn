@@ -63,6 +63,22 @@ class CairnClient:
         response.raise_for_status()
         return Settings.model_validate(response.json())
 
+    def update_settings(self, timeout: int) -> Settings:
+        response = self._session().put(
+            self._url("/settings"),
+            json={"intent_timeout": timeout, "reason_timeout": timeout},
+            timeout=self._timeout,
+        )
+        response.raise_for_status()
+        return Settings.model_validate(response.json())
+
+    def update_project_status(self, project_id: str, status: str) -> ApiResult:
+        return self._request_json(
+            "PUT",
+            f"/projects/{project_id}/status",
+            json={"status": status},
+        )
+
     def export_project(self, project_id: str) -> str:
         response = self._session().get(
             self._url(f"/projects/{project_id}/export"),

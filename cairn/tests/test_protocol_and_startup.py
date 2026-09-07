@@ -23,6 +23,34 @@ def test_client_request_failure_returns_status_zero() -> None:
     assert result.text == "offline"
 
 
+def test_client_updates_server_lease_settings() -> None:
+    captured: dict = {}
+
+    class Response:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return {"intent_timeout": 120, "reason_timeout": 120}
+
+    class Session:
+        def put(self, url, json, timeout):
+            captured.update(url=url, json=json, timeout=timeout)
+            return Response()
+
+    client = CairnClient("http://server/")
+    client._local.session = Session()
+
+    settings = client.update_settings(120)
+
+    assert settings.intent_timeout == 120
+    assert captured == {
+        "url": "http://server/settings",
+        "json": {"intent_timeout": 120, "reason_timeout": 120},
+        "timeout": 10.0,
+    }
+
+
 def test_startup_healthcheck_failure_summary_includes_worker_details() -> None:
     results = [
         StartupHealthcheckResult(
