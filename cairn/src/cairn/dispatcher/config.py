@@ -171,6 +171,13 @@ class RuntimeConfig(BaseModel):
     worker_healthcheck: WorkerHealthcheckMode = "startup_only"
     execution: ExecutionMode = "container"
     prompt_group: str = Field(min_length=1)
+    heartbeat_failure_grace: int | None = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def validate_heartbeat_grace(self) -> "RuntimeConfig":
+        if self.heartbeat_failure_grace is not None and self.heartbeat_failure_grace <= self.interval:
+            raise ValueError("heartbeat_failure_grace must be greater than interval")
+        return self
 
 
 class WorkerConfig(BaseModel):

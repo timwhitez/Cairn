@@ -65,6 +65,8 @@ class PiDriver(WorkerDriver):
             env["PI_MODEL"],
             "--mode",
             "json",
+            "--thinking",
+            self._thinking(worker),
             "--session-dir",
             self._session_dir(worker),
         ]
@@ -84,6 +86,8 @@ class PiDriver(WorkerDriver):
             env["PI_MODEL"],
             "--mode",
             "json",
+            "--thinking",
+            self._thinking(worker),
             "--session-dir",
             self._session_dir(worker),
             "--session",
@@ -100,6 +104,8 @@ class PiDriver(WorkerDriver):
         pi_argv = [
             "--mode",
             "json",
+            "--thinking",
+            self._thinking(worker),
             "--session-dir",
             session_dir,
             "--no-extensions",
@@ -230,3 +236,8 @@ class PiDriver(WorkerDriver):
         }
         payload = {"providers": {"cairn": provider}}
         return json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+
+    @staticmethod
+    def _thinking(worker: WorkerConfig) -> str:
+        value = worker.env.get("PI_REASONING_EFFORT") or worker.env.get("OPENAI_REASONING_EFFORT") or "high"
+        return value.strip() or "high"

@@ -11,9 +11,6 @@ from cairn.dispatcher.runtime.process import ExecProcess
 
 
 LOG = logging.getLogger(__name__)
-HEARTBEAT_FAILURE_GRACE_MULTIPLIER = 2
-
-
 @dataclass(slots=True)
 class HeartbeatFailure:
     status_code: int | None
@@ -27,11 +24,13 @@ class HeartbeatLease:
         scope: str,
         worker_name: str,
         interval: int,
+        failure_grace_seconds: int = 90,
     ):
         self._heartbeat = heartbeat
         self._scope = scope
         self._worker_name = worker_name
         self._interval = interval
+        self._failure_grace_seconds = failure_grace_seconds
         self._process: ExecProcess | None = None
         self._failure: HeartbeatFailure | None = None
         self._last_success_at = time.monotonic()
@@ -47,12 +46,14 @@ class HeartbeatLease:
         intent_id: str,
         worker_name: str,
         interval: int,
+        failure_grace_seconds: int = 90,
     ) -> "HeartbeatLease":
         return cls(
             heartbeat=lambda: client.heartbeat(project_id, intent_id, worker_name),
             scope=f"project={project_id} intent={intent_id}",
             worker_name=worker_name,
             interval=interval,
+            failure_grace_seconds=failure_grace_seconds,
         )
 
     @classmethod
@@ -62,12 +63,14 @@ class HeartbeatLease:
         project_id: str,
         worker_name: str,
         interval: int,
+        failure_grace_seconds: int = 90,
     ) -> "HeartbeatLease":
         return cls(
             heartbeat=lambda: client.reason_heartbeat(project_id, worker_name),
             scope=f"project={project_id} reason",
             worker_name=worker_name,
             interval=interval,
+            failure_grace_seconds=failure_grace_seconds,
         )
 
     def start(self) -> None:
@@ -95,7 +98,7 @@ class HeartbeatLease:
                 self._fail(result.status_code, result.text)
                 return
             elapsed = time.monotonic() - self._last_success_at
-            grace_seconds = max(float(self._interval), float(self._interval * HEARTBEAT_FAILURE_GRACE_MULTIPLIER))
+            grace_seconds = float(self._failure_grace_seconds)
             LOG.warning(
                 "heartbeat transient failure scope=%s worker=%s status=%s elapsed=%.1fs grace=%.1fs",
                 self._scope,

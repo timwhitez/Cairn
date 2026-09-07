@@ -34,6 +34,19 @@ def test_dispatch_config_defaults_worker_healthcheck_and_rejects_unknown_mode() 
         DispatchConfig.model_validate(payload)
 
 
+def test_runtime_heartbeat_grace_is_bounded() -> None:
+    payload = make_config().model_dump()
+    payload["runtime"]["heartbeat_failure_grace"] = 90
+
+    runtime = DispatchConfig.model_validate(payload).runtime
+
+    assert runtime.heartbeat_failure_grace == 90
+
+    payload["runtime"]["heartbeat_failure_grace"] = payload["runtime"]["interval"]
+    with pytest.raises(ValidationError, match="heartbeat_failure_grace must be greater than interval"):
+        DispatchConfig.model_validate(payload)
+
+
 def test_dispatch_config_rejects_duplicate_workers_and_excess_project_parallelism() -> None:
     payload = make_config().model_dump()
     payload["workers"].append(dict(payload["workers"][0]))
@@ -99,6 +112,7 @@ def test_pi_driver_models_json_and_execute_argv_include_context_window_and_tools
                 "PI_API_KEY": "secret",
                 "PI_PROVIDER_API": "openai-completions",
                 "PI_MODEL_CONTEXT_WINDOW": "131072",
+                "PI_REASONING_EFFORT": "medium",
             },
         }
     )
@@ -108,6 +122,7 @@ def test_pi_driver_models_json_and_execute_argv_include_context_window_and_tools
 
     assert models["providers"]["cairn"]["models"][0]["contextWindow"] == 131072
     assert "--tools" in result.argv
+    assert result.argv[result.argv.index("--thinking") + 1] == "medium"
     assert result.argv[-2:] == ["-p", "prompt"]
 
 
