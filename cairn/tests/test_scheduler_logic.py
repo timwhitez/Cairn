@@ -3,6 +3,8 @@ from __future__ import annotations
 from concurrent.futures import Future
 from datetime import datetime, timezone
 
+import pytest
+
 from cairn.dispatcher.models import ReasonCheckpoint, RunningTask
 from cairn.dispatcher.runtime.cancellation import TaskCancellation
 from cairn.dispatcher.scheduler.loop import DispatcherLoop
@@ -371,7 +373,11 @@ def test_validate_server_settings_applies_configured_lease_timeout() -> None:
     loop = _loop()
     config = make_config()
     loop.config = config.model_copy(
-        update={"runtime": config.runtime.model_copy(update={"server_lease_timeout": 120})}
+        update={
+            "runtime": config.runtime.model_copy(
+                update={"heartbeat_failure_grace": 90, "server_lease_timeout": 120}
+            )
+        }
     )
     calls: list[int] = []
     loop.client = type(
