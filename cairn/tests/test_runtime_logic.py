@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import importlib
 
 from cairn.dispatcher.config import ContainerConfig
 from cairn.dispatcher.protocol.client import ApiResult
@@ -99,6 +100,19 @@ def test_stopped_container_cleanup_is_noop_after_container_has_already_stopped()
     manager.inspect_state = lambda _name: "exited"
 
     assert manager.cleanup_stopped("proj_001")
+
+
+def test_container_prefix_can_be_overridden_by_environment(monkeypatch) -> None:
+    import cairn.dispatcher.runtime.containers as containers_module
+
+    monkeypatch.setenv("CAIRN_CONTAINER_PREFIX", "isolated-run-")
+    reloaded = importlib.reload(containers_module)
+    try:
+        manager = reloaded.ContainerManager.__new__(reloaded.ContainerManager)
+        assert manager.container_name("proj/001") == "isolated-run-proj-001"
+    finally:
+        monkeypatch.delenv("CAIRN_CONTAINER_PREFIX")
+        importlib.reload(containers_module)
 
 
 def test_write_text_file_uses_archive_api_and_rejects_false_result() -> None:

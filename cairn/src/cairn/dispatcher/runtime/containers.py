@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 from pathlib import PurePosixPath
 import tarfile
 import threading
@@ -17,7 +18,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ContainerManager:
-    _PREFIX = "cairn-dispatch-"
+    _PREFIX = os.environ.get("CAIRN_CONTAINER_PREFIX", "cairn-dispatch-")
 
     def __init__(self, config: ContainerConfig):
         self._config = config
