@@ -23,6 +23,12 @@ runtime:
   max_project_workers: 2
   interval: 3
   healthcheck_timeout: 15
+  # Optional: tolerate transient server heartbeat failures longer than 2 * interval.
+  # heartbeat_failure_grace: 90
+  # Optional: update server intent/reason leases when the dispatcher starts.
+  # server_lease_timeout: 120
+  # Optional: stop a project after this many seconds from its first persisted intent.
+  # project_timeout: 14400
   prompt_group: "default"
 
 tasks:

@@ -175,6 +175,13 @@ uv run --project cairn cairn dispatch --config dispatch.yaml
 uv run --project cairn cairn dispatch --config dispatch.yaml --startup-healthcheck-only
 ```
 
+Long-running deployments can set `runtime.project_timeout` to bound a project's total
+wall clock across task transitions and dispatcher restarts. Set
+`runtime.heartbeat_failure_grace` and `runtime.server_lease_timeout` together when the
+server connection can pause briefly; the lease timeout must be greater than the
+heartbeat grace. Pi workers can set `PI_REASONING_EFFORT` without tying Cairn to a
+particular model provider.
+
 ### Local mode (no Docker)
 
 Instead of one container per project, workers can run directly on the dispatcher host, reusing the machine's already-configured `claude` / `codex` / `pi` CLIs — no Docker, and no API keys in the config.

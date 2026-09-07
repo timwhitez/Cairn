@@ -24,13 +24,13 @@ class HeartbeatLease:
         scope: str,
         worker_name: str,
         interval: int,
-        failure_grace_seconds: int = 90,
+        failure_grace_seconds: int | None = None,
     ):
         self._heartbeat = heartbeat
         self._scope = scope
         self._worker_name = worker_name
         self._interval = interval
-        self._failure_grace_seconds = failure_grace_seconds
+        self._failure_grace_seconds = failure_grace_seconds or interval * 2
         self._process: ExecProcess | None = None
         self._failure: HeartbeatFailure | None = None
         self._last_success_at = time.monotonic()
@@ -46,7 +46,7 @@ class HeartbeatLease:
         intent_id: str,
         worker_name: str,
         interval: int,
-        failure_grace_seconds: int = 90,
+        failure_grace_seconds: int | None = None,
     ) -> "HeartbeatLease":
         return cls(
             heartbeat=lambda: client.heartbeat(project_id, intent_id, worker_name),
@@ -63,7 +63,7 @@ class HeartbeatLease:
         project_id: str,
         worker_name: str,
         interval: int,
-        failure_grace_seconds: int = 90,
+        failure_grace_seconds: int | None = None,
     ) -> "HeartbeatLease":
         return cls(
             heartbeat=lambda: client.reason_heartbeat(project_id, worker_name),
