@@ -239,5 +239,5 @@ class PiDriver(WorkerDriver):
 
     @staticmethod
     def _thinking(worker: WorkerConfig) -> str:
-        value = worker.env.get("PI_REASONING_EFFORT") or worker.env.get("OPENAI_REASONING_EFFORT") or "high"
+        value = worker.env.get("PI_REASONING_EFFORT") or "high"
         return value.strip() or "high"
