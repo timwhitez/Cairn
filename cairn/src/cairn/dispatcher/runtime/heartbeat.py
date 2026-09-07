@@ -11,6 +11,8 @@ from cairn.dispatcher.runtime.process import ExecProcess
 
 
 LOG = logging.getLogger(__name__)
+
+
 @dataclass(slots=True)
 class HeartbeatFailure:
     status_code: int | None
