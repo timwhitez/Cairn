@@ -144,6 +144,26 @@ def test_pi_driver_models_json_and_execute_argv_include_context_window_and_tools
     assert result.argv[-2:] == ["-p", "prompt"]
 
 
+def test_pi_driver_does_not_force_thinking_when_unconfigured() -> None:
+    worker = WorkerConfig.model_validate(
+        {
+            "name": "pi-worker",
+            "type": "pi",
+            "task_types": ["explore"],
+            "max_running": 1,
+            "priority": 0,
+            "env": {
+                "PI_MODEL": "model",
+                "PI_BASE_URL": "http://api",
+                "PI_API_KEY": "secret",
+                "PI_PROVIDER_API": "openai-completions",
+            },
+        }
+    )
+
+    assert "--thinking" not in PiDriver().build_execute(worker, "prompt", None).argv
+
+
 def test_codex_driver_execute_argv_passes_model_endpoint_and_prompt() -> None:
     worker = WorkerConfig.model_validate(
         {

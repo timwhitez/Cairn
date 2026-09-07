@@ -65,11 +65,9 @@ class PiDriver(WorkerDriver):
             env["PI_MODEL"],
             "--mode",
             "json",
-            "--thinking",
-            self._thinking(worker),
-            "--session-dir",
-            self._session_dir(worker),
         ]
+        argv.extend(self._thinking_args(worker))
+        argv.extend(["--session-dir", self._session_dir(worker)])
         if session:
             argv.extend(["--session", session])
         argv.extend(["-p", prompt])
@@ -86,15 +84,11 @@ class PiDriver(WorkerDriver):
             env["PI_MODEL"],
             "--mode",
             "json",
-            "--thinking",
-            self._thinking(worker),
-            "--session-dir",
-            self._session_dir(worker),
-            "--session",
-            session,
-            "-p",
-            prompt,
         ]
+        argv.extend(self._thinking_args(worker))
+        argv.extend(
+            ["--session-dir", self._session_dir(worker), "--session", session, "-p", prompt]
+        )
         return self._wrap_with_models(worker, argv)
 
     def _local_argv(self, worker: WorkerConfig, prompt: str, session: str | None) -> list[str]:
@@ -104,18 +98,21 @@ class PiDriver(WorkerDriver):
         pi_argv = [
             "--mode",
             "json",
-            "--thinking",
-            self._thinking(worker),
-            "--session-dir",
-            session_dir,
-            "--no-extensions",
-            "--no-skills",
-            "--no-prompt-templates",
-            "--no-themes",
-            "--no-context-files",
-            "--tools",
-            "read,write,edit,bash,grep,find,ls",
         ]
+        pi_argv.extend(self._thinking_args(worker))
+        pi_argv.extend(
+            [
+                "--session-dir",
+                session_dir,
+                "--no-extensions",
+                "--no-skills",
+                "--no-prompt-templates",
+                "--no-themes",
+                "--no-context-files",
+                "--tools",
+                "read,write,edit,bash,grep,find,ls",
+            ]
+        )
         if session:
             pi_argv.extend(["--session", session])
         pi_argv.extend(["-p", prompt])
@@ -238,6 +235,6 @@ class PiDriver(WorkerDriver):
         return json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
 
     @staticmethod
-    def _thinking(worker: WorkerConfig) -> str:
-        value = worker.env.get("PI_REASONING_EFFORT") or "high"
-        return value.strip() or "high"
+    def _thinking_args(worker: WorkerConfig) -> list[str]:
+        value = worker.env.get("PI_REASONING_EFFORT", "").strip()
+        return ["--thinking", value] if value else []

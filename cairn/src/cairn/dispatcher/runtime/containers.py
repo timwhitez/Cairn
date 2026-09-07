@@ -18,7 +18,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ContainerManager:
-    _PREFIX = os.environ.get("CAIRN_CONTAINER_PREFIX", "cairn-dispatch-")
+    _PREFIX = os.environ.get("CAIRN_CONTAINER_PREFIX", "").strip() or "cairn-dispatch-"
 
     def __init__(self, config: ContainerConfig):
         self._config = config

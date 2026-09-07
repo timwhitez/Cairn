@@ -388,3 +388,19 @@ def test_validate_server_settings_applies_configured_lease_timeout() -> None:
     loop._validate_server_settings()
 
     assert calls == [120]
+
+
+def test_validate_server_settings_rejects_lease_shorter_than_heartbeat_grace() -> None:
+    loop = _loop()
+    config = make_config()
+    loop.config = config.model_copy(
+        update={"runtime": config.runtime.model_copy(update={"heartbeat_failure_grace": 90})}
+    )
+    loop.client = type(
+        "Client",
+        (),
+        {"get_settings": lambda _self: type("Settings", (), {"intent_timeout": 15, "reason_timeout": 15})()},
+    )()
+
+    with pytest.raises(RuntimeError, match="heartbeat failure grace=90s"):
+        loop._validate_server_settings()

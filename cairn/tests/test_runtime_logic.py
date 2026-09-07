@@ -115,6 +115,19 @@ def test_container_prefix_can_be_overridden_by_environment(monkeypatch) -> None:
         importlib.reload(containers_module)
 
 
+def test_blank_container_prefix_falls_back_to_default(monkeypatch) -> None:
+    import cairn.dispatcher.runtime.containers as containers_module
+
+    monkeypatch.setenv("CAIRN_CONTAINER_PREFIX", "   ")
+    reloaded = importlib.reload(containers_module)
+    try:
+        manager = reloaded.ContainerManager.__new__(reloaded.ContainerManager)
+        assert manager.container_name("proj_001") == "cairn-dispatch-proj_001"
+    finally:
+        monkeypatch.delenv("CAIRN_CONTAINER_PREFIX")
+        importlib.reload(containers_module)
+
+
 def test_write_text_file_uses_archive_api_and_rejects_false_result() -> None:
     manager = _manager()
     container = FakeContainer()

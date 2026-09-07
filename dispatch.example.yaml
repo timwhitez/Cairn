@@ -19,13 +19,13 @@ runtime:
   healthcheck_timeout: 20
   # Optional grace window for transient Cairn server heartbeat failures.
   # Defaults to twice `interval` when omitted.
-  heartbeat_failure_grace: 90
+  # heartbeat_failure_grace: 90
   # Optional server-side lease timeout for both intent and reason claims.
   # When set, it must be greater than heartbeat_failure_grace.
-  server_lease_timeout: 120
+  # server_lease_timeout: 120
   # Optional total wall-clock limit for a project, measured from its first persisted intent.
   # The deadline survives task changes and dispatcher restarts. Omit for no project deadline.
-  project_timeout: 14400
+  # project_timeout: 14400
   # "startup_and_task" checks at dispatcher startup and before every task.
   # "startup_only" checks only at startup. "disabled" skips automatic worker checks.
   worker_healthcheck: "startup_only"
@@ -95,4 +95,4 @@ workers:
   #     PI_API_KEY: "sk-xxx"
   #     PI_PROVIDER_API: "openai-completions"
   #     PI_MODEL_CONTEXT_WINDOW: "262144"
-  #     PI_REASONING_EFFORT: "high"
+  #     PI_REASONING_EFFORT: "<EFFORT>"

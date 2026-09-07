@@ -939,26 +939,18 @@ class DispatcherLoop:
             else self.client.get_settings()
         )
         interval = self.config.runtime.interval
+        effective_grace = self.config.runtime.heartbeat_failure_grace or interval * 2
         for name, value in (("intent_timeout", settings.intent_timeout), ("reason_timeout", settings.reason_timeout)):
-            if value <= interval:
+            if value <= effective_grace:
                 raise RuntimeError(
-                    f"server {name}={value}s must be greater than dispatcher interval={interval}s"
+                    f"server {name}={value}s must be greater than heartbeat failure grace={effective_grace}s"
                 )
-            if value < interval * 2:
-                LOG.warning(
-                    "server %s is tight %s=%ss interval=%ss; heartbeat slack is only %ss",
-                    name,
-                    name,
-                    value,
-                    interval,
-                    value - interval,
-                )
-                continue
             LOG.info(
-                "server setting validated %s=%ss interval=%ss",
+                "server setting validated %s=%ss interval=%ss grace=%ss",
                 name,
                 value,
                 interval,
+                effective_grace,
             )
 
     def _run_startup_healthchecks(self, *, show_commands: bool) -> None:
